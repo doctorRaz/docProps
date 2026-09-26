@@ -70,6 +70,39 @@ XML-файл содержит сериализованное представл�
 
 При наличии нескольких таблиц с одинаковым именем импорт по имени не выполняется — таблица выбирается на чертеже.
 
+## Автоматизация сборки и публикации
+
+GitHub Actions разделены по ответственности:
+
+- **CI** (`.github/workflows/ci.yml`) выполняет restore, build и test для solution из общей конфигурации;
+- **Create release tag** (`.github/workflows/create-release-tag.yml`) после успешного merge PR в `master` автоматически определяет Major.Minor первого проекта, выбирает канал `release` или `mandatory`, рассчитывает следующий номер и создаёт tag;
+- **Release** (`.github/workflows/release.yml`) запускается для созданного release/mandatory tag, выполняет проверку, сборку, упаковку и публикацию релиза;
+- тестовые workflows (`test-*.yml`) предназначены для проверки передачи outputs, reusable workflows и отдельных механизмов Actions и не являются частью production release pipeline.
+
+Создание tag и публикация Release разделены. Workflow создания tag **не собирает и не публикует Release**: после создания tag он явно запускает `release.yml` на этом tag.
+
+Формат автоматически создаваемых тегов:
+
+```
+<solution>_<major>.<minor>-releaseN
+<solution>_<major>.<minor>-mandatoryN
+```
+
+При изменении Major относительно предыдущего релиза выбирается `mandatory`; при сохранении Major — `release`. Счётчики двух каналов независимы.
+
+## Конфигурация release
+
+Основная конфигурация release находится в `.github/release-settings/release.config.json`.
+
+В ней задаются:
+
+- solution и основные проекты;
+- дополнительные `subProjects`;
+- необходимость публикации Release в текущем репозитории через `publicHere`;
+- список удалённых репозиториев через `remote`.
+
+Подробное описание release-настроек, токенов и порядка публикации находится в [`.github/release-settings/README.md`](.github/release-settings/README.md).
+
 ## Установка
 
 1. Распакуйте архив релиза в доступный каталог.
@@ -77,6 +110,18 @@ XML-файл содержит сериализованное представл�
 3. Перезапустите nanoCAD.
 4. Для проверки загрузки выполните команду `drz_docProps_cmdInfo`.
 
+## Проект
 
+Основная сборка: `docProps.NC`.
 
+В решении также присутствует отдельный проект `docProps.Tests` для автоматизированного тестирования.
 
+Проект использует .NET 6 для Windows и API nanoCAD/MultiCAD.
+
+## История изменений
+
+История изменений проекта доступна в [истории коммитов](https://github.com/doctorRaz/docProps-dev/commits/master).
+
+## Legacy
+
+Исходная реализация сохранена в архивной ветке для исторической справки. Актуальная разработка ведётся в `master` / `develop`.
